@@ -17,7 +17,7 @@ IP_LIST="~/Desktop/iplist.txt"
 PING_AMT=16
 
 @ Host of database
-DB_HOST="stratait.com"
+DB_HOST="localhost"
 
 @ Username to use when interfacing with the database
 DB_USER="default"
@@ -26,13 +26,16 @@ DB_USER="default"
 DB_PASS="hunter2"
 
 @ Name of the database
-DB_NAME="pingMonitorDB"
+DB_NAME="myDatabase"
 
 @ Whether to write every ping
 WRITE_PINGS=true
 
 @ Whether to write the average of all pings
 WRITE_AVG=true
+
+@Time to stop waiting for a response after sending a ping
+TIMEOUT=1
 """
 
 def resetCFGFile():
@@ -49,25 +52,24 @@ def formatOutput(pOutput):
 
 def formatWebName(name):
 	fname=name
+	print name
 	if name.startswith('http') or name.startswith('ssh') or name.startswith('ftp'):
-		fname=name[name.find("://"):]
-	fname=fname.replace(".","-")
-	fname=fname[:fname.find("/")]
+		fname=name[name.find("://")+3:]
+	print fname
+	fname=fname.replace(".","_")
 	return fname
 
 def createDBTable(cursor,name):
-	#TODO: Finish SQL_CREATE_COMMAND
-	SQL_CREATE_COMMAND = """CREATE TABLE IF NOT EXISTS %s(
-		index INT(0) AUTO_INCREMENT PRIMARY KEY,
-		time VARCHAR(16),
-		date VARCHAR(12)
-		) ENGINE=InnoDB"""%(name)
+	SQL_CREATE_COMMAND = "CREATE TABLE IF NOT EXISTS %s("%(name)
+	SQL_CREATE_COMMAND += """idx INT NOT NULL AUTO_INCREMENT, PRIMARY KEY(idx), pingTimes VARCHAR(16), datetime TIMESTAMP) ENGINE=InnoDB;
+	"""
+	print "COM: " + SQL_CREATE_COMMAND
 	cursor.execute(SQL_CREATE_COMMAND)
 
-def writeToDB(cursor,data,date,name):
+def writeToDB(cursor,data,name):
 	SQL_WRITE_COMMAND = """
-		INSERT INTO %s (time,date)
-		VALUES(%s,%s);"""%(name,date,data)
+		INSERT INTO %s (pingTimes)
+		VALUES(%s);"""%(name,data)
 	cursor.execute(SQL_WRITE_COMMAND)
 
 def formateDateTime():
@@ -82,16 +84,10 @@ def formateDateTime():
 	return fdate
 
 def getAverage(out):
-	out = out.split('\n')[1:-5]
-	times=[]
 	avg=0
-	for line in out:
-		#if FAIL_MESSAGE not in line.lower():
-		if '=' not in line.lower():
-			times.append(line.split('=')[-1].split('ms')[0])
-	for t in times:
+	for t in out:
 		avg += float(t)
-	return (avg/len(times))
+	return (avg/len(out))
 
 def processArgs():
 	url="google.com"
@@ -103,48 +99,69 @@ def processArgs():
 			times=arg.split('=')[1]
 	return [url,str(times)]
 
-def getPingOutput(url,time):
-	CMD=['ping',url,'-c ' + time]
+def getPingOutput(url,time,timeout):
+	CMD=['ping',url,'-c ' + str(time),'-W ' + str(timeout)]
 	result = subprocess.check_output(CMD)
 	return result
 
-def pingIP(url,amt):
-	out = getPingOutput(url,amt)
+def pingIP(url,amt,timeout):
+	out = getPingOutput(url,amt,timeout).split("\n")
 	times=[]
+	out = out[1:-5]
 	for line in out:
-		if '=' not in line.lower():
-			times.append(line.split('=')[-1].split('ms')[0])
+		if '=' in line.lower():
+			#times.append(line.split('=')[-1].split('ms')[0])
+			times.append(float(line.split('=')[-1][:-3]))
 		else:
 			times.append(0)
 	return times
+
+def readIPs(db):
+	ips=[]
+	db.query("SELECT * FROM IP_LIST")
+	res = db.use_result()
+	ip=res.fetch_row(1)
+	while ip!=():
+		ips.append(ip[0][1])
+		ip=res.fetch_row(1)
+	print "IPs:", ips
+	return ips
 
 def main():
 	try:
 		cfg = Config.Config("pingMonitor.cfg")
 	except OSError:
+		# Really, it doesn't matter if we do this. The default settings don't have the correct information to work with the database
 		resetCFGFile()
 		cfg = Config.Config('pingMonitor.cfg')
 	host = cfg.getOption("DB_HOST")
 	user = cfg.getOption("DB_USER")
 	pswd = cfg.getOption("DB_PASS")
 	name = cfg.getOption("DB_NAME")
-	ips = open(cfg.getOption("IP_LIST")).read().split("\n")
+	#ips = open(cfg.getOption("IP_LIST")).read().split("\n")
 	pings = cfg.getOption("PING_AMT")
 	writePings = cfg.getOption("WRITE_PINGS")
 	writeAvg = cfg.getOption("WRITE_AVG")
+	timeout = cfg.getOption("TIMEOUT")
 	db = MySQLdb.connect(host=host,user=user,passwd=pswd,db=name)
 	cur = db.cursor()
+	ips = readIPs(db);
 	for ip in ips:
-		fname = formatWebName(ip)
+		fname = formatWebName(("http://" if not "://" in str(ip) else "")+str(ip))
+		print "fname:",fname
 		createDBTable(cur,fname)
-		times = pingIP(ip)
-		dt = formatDateTime()
+		print "Pinging " + ip + "."
+		times = pingIP(ip,pings,timeout)
 		if writePings:
+			print "Writing pings"
 			for t in times:
-				writeToDB(cur,t,dt)
+				writeToDB(cur,t,fname)
 		if writeAvg:
+			print "Writing average"
 			avg = getAverage(times)
-			writeToDB(cur,avg,dt)
+			writeToDB(cur,avg,fname)
+		db.commit()
+	db.close()
 
 if __name__ == '__main__':
 	try:
