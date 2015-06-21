@@ -52,10 +52,8 @@ def formatOutput(pOutput):
 
 def formatWebName(name):
 	fname=name
-	print name
 	if name.startswith('http') or name.startswith('ssh') or name.startswith('ftp'):
 		fname=name[name.find("://")+3:]
-	print fname
 	fname=fname.replace(".","_")
 	return fname
 
@@ -63,7 +61,6 @@ def createDBTable(cursor,name):
 	SQL_CREATE_COMMAND = "CREATE TABLE IF NOT EXISTS %s("%(name)
 	SQL_CREATE_COMMAND += """idx INT NOT NULL AUTO_INCREMENT, PRIMARY KEY(idx), pingTimes VARCHAR(16), datetime TIMESTAMP) ENGINE=InnoDB;
 	"""
-	print "COM: " + SQL_CREATE_COMMAND
 	cursor.execute(SQL_CREATE_COMMAND)
 
 def writeToDB(cursor,data,name):
@@ -124,7 +121,6 @@ def readIPs(db):
 	while ip!=():
 		ips.append(ip[0][1])
 		ip=res.fetch_row(1)
-	print "IPs:", ips
 	return ips
 
 def main():
@@ -148,7 +144,6 @@ def main():
 	ips = readIPs(db);
 	for ip in ips:
 		fname = formatWebName(("http://" if not "://" in str(ip) else "")+str(ip))
-		print "fname:",fname
 		createDBTable(cur,fname)
 		print "Pinging " + ip + "."
 		times = pingIP(ip,pings,timeout)
