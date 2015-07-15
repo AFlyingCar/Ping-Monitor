@@ -63,10 +63,10 @@ def createDBTable(cursor,name):
 	"""
 	cursor.execute(SQL_CREATE_COMMAND)
 
-def writeToDB(cursor,data,name):
+def writeToDB(cursor,data,name,ip):
 	SQL_WRITE_COMMAND = """
-		INSERT INTO %s (pingTimes)
-		VALUES(%s);"""%(name,data)
+		INSERT INTO %s (IP,pingTimes)
+		VALUES('%s','%s');"""%(name,ip,data)
 	cursor.execute(SQL_WRITE_COMMAND)
 
 def formateDateTime():
@@ -119,7 +119,7 @@ def readIPs(db):
 	res = db.use_result()
 	ip=res.fetch_row(1)
 	while ip!=():
-		ips.append(ip[0][1])
+		ips.append(ip[0][2])
 		ip=res.fetch_row(1)
 	return ips
 
@@ -127,8 +127,10 @@ def main():
 	try:
 		cfg = Config.Config("pingMonitor.cfg")
 	except OSError:
-		# Really, it doesn't matter if we do this. The default settings don't have the correct information to work with the database
+		print "Unable to find pingMonitor.cfg, creating default file."
 		resetCFGFile()
+		print "Generated config file. Please edit it and place in the correct information."
+		return
 		cfg = Config.Config('pingMonitor.cfg')
 	host = cfg.getOption("DB_HOST")
 	user = cfg.getOption("DB_USER")
@@ -144,13 +146,15 @@ def main():
 	ips = readIPs(db);
 	for ip in ips:
 		fname = formatWebName(("http://" if not "://" in str(ip) else "")+str(ip))
-		createDBTable(cur,fname)
+		#createDBTable(cur,fname)
 		print "Pinging " + ip + "."
 		times = pingIP(ip,pings,timeout)
 		if writePings:
 			print "Writing pings"
 			for t in times:
-				writeToDB(cur,t,fname)
+				writeToDB(cur,t,"dataTable",ip)
+		# Only commenting out old functionality in case we want to go back to it
+		#		writeToDB(cur,t,fname)
 		if writeAvg:
 			print "Writing average"
 			avg = getAverage(times)
