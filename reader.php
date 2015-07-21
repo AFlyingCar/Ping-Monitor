@@ -18,25 +18,69 @@
  }
 
  // TODO: Add ability to filter data via parameters
- function readData(){
+ function readData($ip_filter="",$date_start_filter="",$date_end_filter=""){
 	global $link;
 	$sql_query='SELECT * FROM dataTable';
 
 	// Filter stuff
 	// ...
 
+	if($ip_filter != "" || $date_start_filter != "" || $date_end_filter != ""){
+		$sql_query = $sql_query . ' WHERE ';
+	}
+
+	if($ip_filter != ""){
+		$sql_query = $sql_query . ' IP="' . $ip_filter . '"';
+		if($date_start_filter != "" || $date_end_filter != ""){
+			$sql_query = $sql_query . ' AND';
+		}
+	}
+
+	if($date_start_filter != ""){
+		$sql_query = $sql_query . ' datetime>="' . $date_start_filter . '"';
+		if($date_end_filter != ""){
+			$sql_query = $sql_query . ' AND';
+		}
+	}
+
+	if($date_end_filter != ""){
+		$sql_query = $sql_query . ' datetime<="' . $date_end_filter . '"';
+	}
+
 	$rows=array();
 	$result =mysqli_query($link,$sql_query);
+	if(!$result){
+		echo('An error occurred when querying the database:<p>');
+		print_r(mysqli_error_list($link));
+		echo('<p>Command: ' . $sql_query);
+		die('');
+	}
 	for($idx=0;$idx<mysqli_num_rows($result);$idx++){
 		array_push($rows,mysqli_fetch_array($result,MYSQL_NUM));
 	}
-	//return mysqli_fetch_array($result,MYSQL_NUM);
 	return $rows;
  }
 
+ if(isset($_GET['ip'])){
+	$ip=$_GET['ip'];
+ }else{
+	$ip="";
+ }
+
+ if(isset($_GET['sdate'])){
+	$sdate=$_GET['sdate'];
+ }else{
+	$sdate="";
+ }
+
+ if(isset($_GET['edate'])){
+	$edate=$_GET['edate'];
+ }else{
+	$edate="";
+ }
 
  // Testing area
- $result=readData();
+ $result=readData($ip,$sdate,$edate);
  for($edx=0;$edx<sizeof($result);$edx++){
 	 echo "<p>";
 	 for($idx=0;$idx<sizeof($result[$edx]);$idx++){
