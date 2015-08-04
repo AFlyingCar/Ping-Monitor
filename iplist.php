@@ -1,3 +1,8 @@
+<form action="iplist.php" method="post">
+	StartDate: <input type="text" name="sdate"/><p/>
+	EndDate: <input type="text" name="edate"/><p/>
+	<input type="submit" name="submit" />
+</form>
 <?php
   include 'Config.php';
   $cfg = new Config("/home/tyler/Desktop/dev/Ping-Monitor/pingMonitor.cfg");
@@ -39,9 +44,32 @@
 	$cID = -1;
   }
 
+  if(isset($_POST['sdate'])){
+	$sdate = $_POST['sdate'];
+  }else{
+	$sdate = '';
+  }
+
+  if(isset($_POST['edate'])){
+	$edate = $_POST['edate'];
+  }else{
+  	$edate='';
+  }
+
+  $href = '<A href="reader.php?ip=';
+
   $result = readIP($cID);
   for($edx = 0; $edx < sizeof($result); $edx++){
 	echo "<p>";
-	echo "<A href=\"reader.php?ip=" . $result[$edx][2] . "\">" . $result[$edx][2] . "</A>";
+	echo $href . $result[$edx][2];
+	if($sdate != ''){
+		echo "&sdate=" . $sdate;
+	}
+	if($edate != ''){
+		echo "&edate=" . $edate;
+	}
+	echo "\">" . $result[$edx][2];
+	echo "</A>";
   }
 ?>
+
