@@ -4,6 +4,12 @@
 	<input type="submit" name="submit" />
 </form>
 <?php
+  /*
+  * iplist.php
+  * Lists all ip addresses. The addresses listed can be filtered by company name.
+  */
+
+  // Get all info on how to access the database
   include 'Config.php';
   $cfg = new Config("/home/tyler/Desktop/dev/Ping-Monitor/pingMonitor.cfg");
   $user = $cfg->getOption("DB_USER");
@@ -21,9 +27,12 @@
 	  die('Error when opening database:\n\t' . mysqli_error());
   }
 
+  // Reads all IP addresses. If $cFilter is <= 0, then now filter is applied and all ips are listed.
   function readIP($cFilter = -1){
 	  global $link;
 	  $sql_query = "SELECT * FROM IP_LIST";
+
+	  // Apply the filter if it is specified
 	  if($cFilter >= 0){
 		$sql_query = $sql_query . " WHERE CompanyID=" . $cFilter;
 	  }
@@ -38,6 +47,7 @@
 	  return $rows;
   }
 
+  // Check for filters
   if(isset($_GET['id'])){
 	$cID = $_GET['id'];
   }else{
@@ -58,9 +68,11 @@
 
   $href = '<A href="reader.php?ip=';
 
+  // Apply filters
   $result = readIP($cID);
   for($edx = 0; $edx < sizeof($result); $edx++){
 	echo "<p>";
+	// Format output to link properly and apply the correct filters
 	echo $href . $result[$edx][2];
 	if($sdate != ''){
 		echo "&sdate=" . $sdate;
