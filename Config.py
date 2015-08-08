@@ -1,7 +1,11 @@
+# Config.py
+# A python module for parsing .cfg files.
+
 import os
 
 class Config():
 	def __init__(self,filename):
+		# Automatically fail if the file cannot be found
 		if not os.path.exists(filename):
 			raise OSError("[ERROR] - File not found %s"%filename)
 
@@ -12,10 +16,12 @@ class Config():
 		self.options = returns[0]
 		self.errors = returns[1]
 
+	# Read the file and return the raw data
 	def readFile(self):
 		with open(self.filename,'r') as config:
 			return config.read()
 
+	# Parse the data based on the syntax rules specified below
 	def parseData(self):
 		'''Parse the raw data from a configuration file. Grabs the variable and its subsequent value.
 		returns -> [parsed,errors]
@@ -88,10 +94,12 @@ class Config():
 					print "An error has occurred while parsing %s!"%self.filename
 					print type(e).__name__, str(e)
 
+					# Increase the amount of errors that have occurred by one
 					error += 1
 
 		return [returns,error]
 
+	# Check if a string is a float
 	def isFloat(self,value):
 		try:
 			float(value)
@@ -99,12 +107,16 @@ class Config():
 		except ValueError:
 			return False
 
+	# Convert a string of a list into the actual list type based on the syntax of cfg files. '['value1',value2,value3,...]' into ['value1',value2,value3,...]
 	def stringToList(self,raw,ltype):
+		# Remove list specifiers. [],(),{}
 		contents = raw[1:-1]
 
+		# If there is more than one element...
 		if "," in contents:
 			contents = contents.split(",")
 
+			# Parse the elements
 			for c in contents:
 				if c.isdigit(): 								contents[contents.index(c)] = int(c)
 				elif c.startswith("'") or c.startswith('"'):	contents[contents.index(c)] = c[1:-1]
@@ -117,8 +129,10 @@ class Config():
 
 		return ltype(contents)
 
+	# Get a specific option based on the variable name specified in the .cfg file
 	def getOption(self,varName):
 		return self.options[varName]
 
+	# Return every option found in the .cfg file
 	def getAllOptions(self):
 		return self.options
