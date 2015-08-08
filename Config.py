@@ -136,3 +136,8 @@ class Config():
 	# Return every option found in the .cfg file
 	def getAllOptions(self):
 		return self.options
+
+	# Returns the number of errors that occurred while parsing
+	def getErrors(self):
+		return self.errors
+
