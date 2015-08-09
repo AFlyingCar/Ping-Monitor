@@ -1,3 +1,7 @@
+# Ping Monitor
+# Stores the default configuration file
+# Knows how to grab a list of ips from a database, ping each one, and write the data to a table in the same database
+
 import subprocess
 import sys,datetime
 
@@ -38,6 +42,7 @@ WRITE_AVG=true
 TIMEOUT=1
 """
 
+# Reset the CFG file with the defaults defined above.
 def resetCFGFile():
 	open('pingMonitor.cfg').write(CFG_DEFAULT)
 
@@ -57,18 +62,22 @@ def formatWebName(name):
 	fname=fname.replace(".","_")
 	return fname
 
+# Creates a database table of 'name' if it doesn't already exist
 def createDBTable(cursor,name):
 	SQL_CREATE_COMMAND = "CREATE TABLE IF NOT EXISTS %s("%(name)
 	SQL_CREATE_COMMAND += """idx INT NOT NULL AUTO_INCREMENT, PRIMARY KEY(idx), pingTimes VARCHAR(16), datetime TIMESTAMP) ENGINE=InnoDB;
 	"""
 	cursor.execute(SQL_CREATE_COMMAND)
 
+# Store 'data' in table 'name' by 'ip'
 def writeToDB(cursor,data,name,ip):
 	SQL_WRITE_COMMAND = """
 		INSERT INTO %s (IP,pingTimes)
 		VALUES('%s','%s');"""%(name,ip,data)
 	cursor.execute(SQL_WRITE_COMMAND)
 
+# Format the current date and time
+# DEPRECATED: Use MySQL's DATETIME type instead
 def formateDateTime():
 	now = datetime.now()
 	fdate = ""
@@ -80,12 +89,15 @@ def formateDateTime():
 	fdate += ("0" if now.second < 10 else "") + now.second + ":"
 	return fdate
 
+# Compute the average of a list of times
 def getAverage(out):
 	avg=0
 	for t in out:
 		avg += float(t)
 	return (avg/len(out))
 
+# Get arguments from the command line.
+# DEPRECATED: Use the Config file and IP_LIST table instead
 def processArgs():
 	url="google.com"
 	times=5
@@ -96,11 +108,13 @@ def processArgs():
 			times=arg.split('=')[1]
 	return [url,str(times)]
 
+# Get the output of pinging 'url' 'time' times. Stop trying after 'timeout' time has passed
 def getPingOutput(url,time,timeout):
 	CMD=['ping',url,'-c ' + str(time),'-W ' + str(timeout)]
 	result = subprocess.check_output(CMD)
 	return result
 
+# Gets the output of pinging a url and pulls each ping time out of the output
 def pingIP(url,amt,timeout):
 	out = getPingOutput(url,amt,timeout).split("\n")
 	times=[]
@@ -113,6 +127,7 @@ def pingIP(url,amt,timeout):
 			times.append(0)
 	return times
 
+# Reads IP_LIST and returns the list of ips to ping
 def readIPs(db):
 	ips=[]
 	db.query("SELECT * FROM IP_LIST")
@@ -124,6 +139,7 @@ def readIPs(db):
 	return ips
 
 def main():
+	# Open up the Config file. If it doesn't exist, reset it and exit
 	try:
 		cfg = Config.Config("pingMonitor.cfg")
 	except OSError:
@@ -132,6 +148,8 @@ def main():
 		print "Generated config file. Please edit it and place in the correct information."
 		return
 		cfg = Config.Config('pingMonitor.cfg')
+
+	# Place config values into variables
 	host = cfg.getOption("DB_HOST")
 	user = cfg.getOption("DB_USER")
 	pswd = cfg.getOption("DB_PASS")
@@ -141,9 +159,13 @@ def main():
 	writePings = cfg.getOption("WRITE_PINGS")
 	writeAvg = cfg.getOption("WRITE_AVG")
 	timeout = cfg.getOption("TIMEOUT")
+
+	# Open the database and get the list of ips
 	db = MySQLdb.connect(host=host,user=user,passwd=pswd,db=name)
 	cur = db.cursor()
 	ips = readIPs(db);
+
+	# For each ip, ping it and write it to the database
 	for ip in ips:
 		fname = formatWebName(("http://" if not "://" in str(ip) else "")+str(ip))
 		#createDBTable(cur,fname)
@@ -154,6 +176,7 @@ def main():
 			for t in times:
 				writeToDB(cur,t,"dataTable",ip)
 		# Only commenting out old functionality in case we want to go back to it
+		# We probably don't...
 		#		writeToDB(cur,t,fname)
 		if writeAvg:
 			print "Writing average"
@@ -162,6 +185,7 @@ def main():
 		db.commit()
 	db.close()
 
+# Run main(), but first check to see if MySQLdb is installed, as it is required for this program to work
 if __name__ == '__main__':
 	try:
 		import MySQLdb
