@@ -80,12 +80,14 @@
 	$edate="";
  }
 
- // Testing area
- $result=readData($ip,$sdate,$edate);
- for($edx=0;$edx<sizeof($result);$edx++){
-	 echo "<p>";
-	 for($idx=0;$idx<sizeof($result[$edx]);$idx++){
-		echo $result[$edx][$idx] . "  ";
+ // If no ip is specified, don't display anything
+ if($ip=""){
+	 $result=readData($ip,$sdate,$edate);
+	 for($edx=0;$edx<sizeof($result);$edx++){
+		 echo "<p>";
+		 for($idx=0;$idx<sizeof($result[$edx]);$idx++){
+			echo $result[$edx][$idx] . "  ";
+		 }
 	 }
  }
 

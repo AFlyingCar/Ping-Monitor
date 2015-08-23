@@ -70,19 +70,21 @@
   $href = '<A href="reader.php?ip=';
 
   // Apply filters
+  if($cID > -1){
   $result = readIP($cID);
-  for($edx = 0; $edx < sizeof($result); $edx++){
-	echo "<p>";
-	// Format output to link properly and apply the correct filters
-	echo $href . $result[$edx][2];
-	if($sdate != ''){
-		echo "&sdate=" . $sdate;
-	}
-	if($edate != ''){
-		echo "&edate=" . $edate;
-	}
-	echo "\">" . $result[$edx][2];
-	echo "</A>";
+	  for($edx = 0; $edx < sizeof($result); $edx++){
+		echo "<p>";
+		// Format output to link properly and apply the correct filters
+		echo $href . $result[$edx][2];
+		if($sdate != ''){
+			echo "&sdate=" . $sdate;
+		}
+		if($edate != ''){
+			echo "&edate=" . $edate;
+		}
+		echo "\">" . $result[$edx][2];
+		echo "</A>";
+	  }
   }
 ?>
 
