@@ -1,6 +1,7 @@
 <?php
  include 'Config.php';
- $cfg = new Config("/home/tyler/Desktop/dev/Ping-Monitor/pingMonitor.cfg");
+ //$cfg = new Config("/home/tyler/Desktop/dev/Ping-Monitor/pingMonitor.cfg");
+ $cfg = new Config("/var/www/pingMonitor.cfg");
 
  $user = $cfg->getOption("DB_USER");
  $pass = $cfg->getOption("DB_PASS");
