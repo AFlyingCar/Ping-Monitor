@@ -10,13 +10,13 @@ function installFile{
     sudo wget -t 10 -P /var/www/ http://raw.githubusercontent.com/AFlyingCar/Ping-Monitor/master/"$1" || { exit 1; }
 }
 
-if false; then
-function execMySQL {
-    mysql -u root -p "$1" -e "$2" "$3"
-}
+# Assume that all extra parameters are -u or --upgrade
+# It doesn't matter, because the same operations take place
+if [[ $# -eq 0 ]]; then
+   read -p 'Enter the new password for the mysql database: ' pass
+else
+   read -p 'Enter the password for the mysql database: ' pass
 fi
-
-read -p 'Enter the new password for the mysql database: ' pass
 
 echo 'Updating repository list'
 sudo apt-get update || { exit 1; }
@@ -52,24 +52,4 @@ while read -r line; do
     echo "Installing $line..."
     installFile "$line"
 done <<< "$filelist"
-
-
-
-
-
-# Skipping all of the old sql stuff, since that has now been moved to install.sql
-if false; then
-echo 'Creating pingmonitor database'
-mysql -u root 0p $pass 'CREATE DATABASE pingmonitor;'
-
-echo 'Creating IP_LIST'
-execMySQL $pass 'CREATE TABLE IF NOT EXISTS IP_LIST(idx INT NOT NULL AUTO_INCREMENT, PRIMARY KEY(idx), CompanyID INT, IP VARCHAR(16)) ENGINE=InnoDB;' pingmonitor
-
-echo 'Creating CompanyList'
-execMySQL $pass 'CREATE TABLE IF NOT EXISTS CompanyList(idx INT NOT NULL AUTO_INCREMENT, PRIMARY KEY(idx),CompanyName VARCHAR(255)) ENGINE=InnoDB;' pingmonitor
-
-echo 'Creating dataTable'
-execMySQL $pass 'CREATE TABLE IF NOT EXISTS dataTable(idx INT NOT NULL AUTO_INCREMENT, PRIMARY KEY(idx),IP VARCHAR(16),pingTimes VARCHAR(16) datetime TIMESTAMP) ENGINE=InnoDB;' pingmonitor
-
-fi
 
