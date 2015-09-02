@@ -81,7 +81,7 @@
  }
 
  // If no ip is specified, don't display anything
- if($ip=""){
+ if($ip!=""){
 	 $result=readData($ip,$sdate,$edate);
 	 for($edx=0;$edx<sizeof($result);$edx++){
 		 echo "<p>";
