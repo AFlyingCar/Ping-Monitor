@@ -1,4 +1,4 @@
-<form action="iplist.php" method="post">
+<form action="#" method="post">
 	StartDate: <input type="text" name="sdate"/><p/>
 	EndDate: <input type="text" name="edate"/><p/>
 	<input type="submit" name="submit" />
