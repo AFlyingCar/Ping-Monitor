@@ -3,6 +3,7 @@
 # Knows how to grab a list of ips from a database, ping each one, and write the data to a table in the same database
 
 import subprocess
+import threading
 import sys,datetime
 
 import Config
@@ -138,6 +139,12 @@ def readIPs(db):
 		ip=res.fetch_row(1)
 	return ips
 
+def stop():
+	while(true):
+		if not os.path.exists("./.pmlock"): # If the lock file no longer exists, then quit
+			print ".pmlock no longer exists. Terminating."
+			return None #EXIT NOW
+
 def main():
 	# Open up the Config file. If it doesn't exist, reset it and exit
 	try:
@@ -154,7 +161,6 @@ def main():
 	user = cfg.getOption("DB_USER")
 	pswd = cfg.getOption("DB_PASS")
 	name = cfg.getOption("DB_NAME")
-	#ips = open(cfg.getOption("IP_LIST")).read().split("\n")
 	pings = cfg.getOption("PING_AMT")
 	writePings = cfg.getOption("WRITE_PINGS")
 	writeAvg = cfg.getOption("WRITE_AVG")
@@ -163,26 +169,36 @@ def main():
 	# Open the database and get the list of ips
 	db = MySQLdb.connect(host=host,user=user,passwd=pswd,db=name)
 	cur = db.cursor()
-	ips = readIPs(db);
 
-	# For each ip, ping it and write it to the database
-	for ip in ips:
-		fname = formatWebName(("http://" if not "://" in str(ip) else "")+str(ip))
-		#createDBTable(cur,fname)
-		print "Pinging " + ip + "."
-		times = pingIP(ip,pings,timeout)
-		if writePings:
-			print "Writing pings"
-			for t in times:
-				writeToDB(cur,t,"dataTable",ip)
-		# Only commenting out old functionality in case we want to go back to it
-		# We probably don't...
-		#		writeToDB(cur,t,fname)
-		if writeAvg:
-			print "Writing average"
-			avg = getAverage(times)
-			writeToDB(cur,avg,fname)
-		db.commit()
+	os.system("touch ./.pmlock") # Create lock file.
+
+	# Stop thread
+	# Will finish when the program is ordered to stop
+	t = threading.Thread(target=stop)
+	t.daemon=True
+	t.start()
+
+	while(t.isAlive()):
+		ips = readIPs(db);
+
+		# For each ip, ping it and write it to the database
+		for ip in ips:
+			fname = formatWebName(("http://" if not "://" in str(ip) else "")+str(ip))
+			#createDBTable(cur,fname)
+			print "Pinging " + ip + "."
+			times = pingIP(ip,pings,timeout)
+			if writePings:
+				print "Writing pings"
+				for t in times:
+					writeToDB(cur,t,"dataTable",ip)
+			# Only commenting out old functionality in case we want to go back to it
+			# We probably don't...
+			#		writeToDB(cur,t,fname)
+			if writeAvg:
+				print "Writing average"
+				avg = getAverage(times)
+				writeToDB(cur,avg,fname)
+			db.commit()
 	db.close()
 
 # Run main(), but first check to see if MySQLdb is installed, as it is required for this program to work
