@@ -140,7 +140,7 @@ def readIPs(db):
 	return ips
 
 def stop():
-	while(true):
+	while(True):
 		if not os.path.exists("./.pmlock"): # If the lock file no longer exists, then quit
 			print ".pmlock no longer exists. Terminating."
 			return None #EXIT NOW
