@@ -110,9 +110,15 @@ def processArgs():
 	return [url,str(times)]
 
 # Get the output of pinging 'url' 'time' times. Stop trying after 'timeout' time has passed
+# If an error occurs, return ""
 def getPingOutput(url,time,timeout):
 	CMD=['ping',url,'-c ' + str(time),'-W ' + str(timeout)]
-	result = subprocess.check_output(CMD)
+	try:
+		result = subprocess.check_output(CMD)
+	except subprocess.CalledProcessError as e:
+		print "Ping to " + url + " failed."
+		print e
+		result = ""
 	return result
 
 # Gets the output of pinging a url and pulls each ping time out of the output
@@ -165,6 +171,11 @@ def main():
 	writePings = cfg.getOption("WRITE_PINGS")
 	writeAvg = cfg.getOption("WRITE_AVG")
 	timeout = cfg.getOption("TIMEOUT")
+
+	if timeout < 1: 
+		print "Warning! Timeout values less than 1 can cause the program to hang on unresponsive URLs."
+		if raw_input("Use timeout="+str(timeout)+" anyway?(y/n) ") != 'n':
+			timeout = 1
 
 	# Open the database and get the list of ips
 	db = MySQLdb.connect(host=host,user=user,passwd=pswd,db=name)
