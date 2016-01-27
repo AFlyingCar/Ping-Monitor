@@ -3,7 +3,6 @@
 # Knows how to grab a list of ips from a database, ping each one, and write the data to a table in the same database
 
 import subprocess
-import threading
 import sys,datetime,os
 
 import Config
@@ -145,12 +144,6 @@ def readIPs(db):
         ip=res.fetch_row(1)
     return ips
 
-def stop():
-    while(True):
-        if not os.path.exists("./.pmlock"): # If the lock file no longer exists, then quit
-            print ".pmlock no longer exists. Terminating."
-            return None #EXIT NOW
-
 def main():
     # Open up the Config file. If it doesn't exist, reset it and exit
     try:
@@ -183,13 +176,7 @@ def main():
 
     os.system("touch ./.pmlock") # Create lock file.
 
-    # Stop thread
-    # Will finish when the program is ordered to stop
-    t = threading.Thread(target=stop)
-    t.daemon=True
-    t.start()
-
-    while(t.isAlive()):
+    while(os.path.exists("./.pmlock")):
         ips = readIPs(db);
 
         # For each ip, ping it and write it to the database
