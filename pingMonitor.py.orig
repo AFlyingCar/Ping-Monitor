@@ -144,6 +144,15 @@ def readIPs(db):
         ip=res.fetch_row(1)
     return ips
 
+<<<<<<< HEAD
+def stop():
+    if not os.path.exists("./.pmlock"): # If the lock file no longer exists, then quit
+        print ".pmlock no longer exists. Terminating."
+        return True
+    return False
+
+=======
+>>>>>>> 8105168f78ce16c5a4673377eed545a78a6919cd
 def main():
     # Open up the Config file. If it doesn't exist, reset it and exit
     try:
@@ -176,7 +185,11 @@ def main():
 
     os.system("touch ./.pmlock") # Create lock file.
 
+<<<<<<< HEAD
+    while(!stop()):
+=======
     while(os.path.exists("./.pmlock")):
+>>>>>>> 8105168f78ce16c5a4673377eed545a78a6919cd
         ips = readIPs(db);
 
         # For each ip, ping it and write it to the database
